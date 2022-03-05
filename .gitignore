@@ -1,9 +1,15 @@
 core.Microsoft*
 core.mongo*
 core.python*
+# enviroment variable file
 env.py
 __pycache__/
 *.py[cod]
 node_modules/
 .github/
 cloudinary_python.txt
+# development database
+*.sqlite3
+# Ignore compiled python code, not needed in version control
+*/pyc
+__pycache__
