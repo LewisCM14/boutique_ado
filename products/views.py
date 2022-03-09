@@ -3,13 +3,15 @@
 from django.shortcuts import render, redirect, reverse, get_object_or_404
 from django.contrib import messages
 from django.db.models import Q
-from .models import Product
+from .models import Product, Category
 
 
 def all_products(request):
     """
     A view to show all products.
     Also shows sorting and search queries.
+
+    Searching
 
     q is the name of the text  input on the form.
     If the query is blank use Django messages framework,
@@ -27,24 +29,46 @@ def all_products(request):
     The query is added to the context as search term.
     set as none at the top of this view to ensure we don't get an error
     when loading the products page without a search term.
+
+    Filtering Via Category
+
+    Start with it as none at the top of the view.
+    And then check whether it exists in requests.get.
+    If it does, split it into a list at the commas in the template url.
+    Then use that list to filter the current query set of all products
+    down to only products whose category name is in the list.
+
+    filter all categories down to the ones whose name is in the list.
+    converting the list of strings of category names passed through the URL
+    into a list of actual category objects,
+    so that we can access all their fields in the template.
+    That list of category objects is called current_categories.
+    return  to the context so we can use it in the template.
     """
 
     products = Product.objects.all()
     query = None
+    categories = None
 
     if request.GET:
+        if 'category' in request.GET:
+            categories = request.GET['category'].split(',')
+            products = products.filter(category__name__in=categories)
+            categories = Category.objects.filter(name__in=categories)
+
         if 'q' in request.GET:
             query = request.GET['q']
-        if not query:
-            messages.error(request, "You didn't enter any search criteria!")
-            return redirect(reverse("products"))
+            if not query:
+                messages.error(request, "You didn't enter any search criteria!")  # noqa
+                return redirect(reverse('products'))
 
-        queries = Q(name__icontains=query) | Q(description__icontains=query)
-        products = products.filter(queries)
+            queries = Q(name__icontains=query) | Q(description__icontains=query)  # noqa
+            products = products.filter(queries)
 
     context = {
         'products': products,
         'search_term': query,
+        'current_categories': categories,
     }
 
     return render(request, 'products/products.html', context)
