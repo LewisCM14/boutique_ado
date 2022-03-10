@@ -44,13 +44,59 @@ def all_products(request):
     so that we can access all their fields in the template.
     That list of category objects is called current_categories.
     return  to the context so we can use it in the template.
+
+    Sorting Products
+    Add both sort and direction equal to none at the top.
+    in order to return the template properly when we're not using any sorting.
+
+    Start by  checking whether sort is in request.get.
+    In order to allow case-insensitive sorting on the name field,
+    first annotate all the products with a new field.
+    Check whether the sort key is equal to name.
+    And if it is will set it to lower_name,
+    which is the field created with the annotation.
+    To do the annotation.
+    products equals products.annotate lower_name equals lower name.
+    Then use the lower function on the original name field.
+    The reason for copying the sort parameter into the variable sortkey.
+    Is to preserve the original field we want it to sort on name.
+    But we have the actual field we're going to sort on,
+    lower_name in the sort key variable.
+
+    If it is then check whether the direction is there.
+    check whether it's descending,
+    If so add a minus in front of the sort key using string formatting.
+
+    In order to actually sort the products use the order_by model method.
+
+    Then return the current sorting methodology to the template.
+    Since both the sort and the direction variables are stored
+    this is done with with string formatting in current_sorting.
+
+    Note that the value of this variable will be the string none_none.
+    If there is no sorting.
     """
 
     products = Product.objects.all()
     query = None
     categories = None
+    sort = None
+    direction = None
 
     if request.GET:
+        if 'sort' in request.GET:
+            # sets both equal to sort and sortkey
+            sortkey = request.GET['sort']
+            sort = sortkey
+            if sortkey == 'name':
+                sortkey = 'lower_name'
+                products = products.annotate(lower_name=Lower('name'))
+            if 'direction' in request.GET:
+                direction = request.GET['direction']
+                if direction == 'desc':
+                    sortkey = f'-{sortkey}'
+            products = products.order_by(sortkey)
+
         if 'category' in request.GET:
             categories = request.GET['category'].split(',')
             products = products.filter(category__name__in=categories)
@@ -65,10 +111,13 @@ def all_products(request):
             queries = Q(name__icontains=query) | Q(description__icontains=query)  # noqa
             products = products.filter(queries)
 
+    current_sorting = f'{sort}_{direction}'
+
     context = {
         'products': products,
         'search_term': query,
         'current_categories': categories,
+        'current_sorting': current_sorting,
     }
 
     return render(request, 'products/products.html', context)
