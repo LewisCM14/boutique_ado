@@ -1,17 +1,19 @@
 """ This module contants a context processor for the shopping bag """
 
 from decimal import Decimal
+from django.shortcuts import get_object_or_404
 from django.conf import settings
+from products.models import Product
 
 
-def bag_contents(_request):
+def bag_contents(request):
     """
     returns the context processor for the shopping bag,
     making the dict available for all templates across the application.
 
-    free delivery if they spend more than the amount specified
+    Free delivery if they spend more than the amount specified
     in the free delivery threshold in settings.py.
-    check whether it's less than that threshold.
+    Check whether it's less than that threshold.
     If it is less calculate delivery as the total
     multiplied by the standard delivery percentage
     from settings.py. which in this case is 10%.
@@ -23,11 +25,36 @@ def bag_contents(_request):
     set delivery and the free_delivery_delta to zero.
 
     calculate the grand total. add the delivery charge to the total.
+
+    In order to populate bag_items, total and product_count.
+    Create a variable called bag. Which accesses the requests session.
+    Trying to get this variable if it already exists,
+    and initializing it to an empty dictionary if it doesn't.
+
+    Iterate through all the items in the shopping bag.
+    And along the way, tally up the total cost and product count.
+    Add the products and their data to the bag items list.
+
+    Add a dictionary to the list of bag items containing the id & quantity,
+    But also the product object itself.
+    Allowing access to all the other fields,
+    when iterating through the bag items in our templates.
     """
 
     bag_items = []
     total = 0
     product_count = 0
+    bag = request.session.get('bag', {})
+
+    for item_id, quantity in bag.items():  # bag from session
+        product = get_object_or_404(Product, pk=item_id)  # get product
+        total += quantity * product.price  # add quantity x price to total
+        product_count += quantity  # increment product count by quantity
+        bag_items.append({  # add list of bag items
+            'item_id': item_id,
+            'quantity': quantity,
+            'product': product,
+        })
 
     if total < settings.FREE_DELIVERY_THRESHOLD:
         delivery = total * Decimal(settings.STANDARD_DELIVERY_PERCENTAGE)
