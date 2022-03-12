@@ -103,7 +103,9 @@ And makes the cursor into a pointer. for return to top JS function on products.h
     right: 10px;
 }
 
-.btt-link {
+.btt-link,
+.update-link,
+.remove-item {
     cursor: pointer;
 }
 

@@ -79,7 +79,7 @@ def bag_contents(request):
                 product_count += quantity
                 bag_items.append({
                     'item_id': item_id,
-                    'quantity': item_data,
+                    'quantity': quantity,  # quantity from inner dict
                     'product': product,
                     'size': size,
                 })
