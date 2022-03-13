@@ -130,9 +130,25 @@
                 </div>
             </div>
         </header>
-        <!-- Container for messages returned from Django -->
+        <!-- Container for messages returned from Django, see toast directory in templates 
+        Django messages have levels, which are classifiers like debug info error and so on for different message types. 
+        can be represented with an integer as well. -->
         {% if messages %}
-            <div class="message-container"></div>
+        <div class="message-container">
+            {% for message in messages %}
+                {% with message.level as level %}
+                    {% if level == 40 %}
+                        {% include 'includes/toasts/toast_error.html' %}
+                    {% elif level == 30 %}
+                        {% include 'includes/toasts/toast_warning.html' %}
+                    {% elif level == 25 %}
+                        {% include 'includes/toasts/toast_success.html' %}
+                    {% else %}
+                        {% include 'includes/toasts/toast_info.html' %}
+                    {% endif %}
+                {% endwith %}
+            {% endfor %}
+        </div>
         {% endif %}
 
         {% block page_header %}
@@ -142,6 +158,11 @@
         {% endblock %}
 
         {% block postloadjs %}
+        <!-- Call the toast method from bootstrap. With an option of show.
+        on any elements with the toast class. -->
+        <script type="text/javascript">
+            $('.toast').toast('show');
+        </script>
         {% endblock %}
     </body>
 </html>
