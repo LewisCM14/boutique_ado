@@ -1,6 +1,6 @@
 """ This module contains the views for the bag app """
 
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, reverse, HttpResponse
 
 
 def view_bag(request):
@@ -62,3 +62,77 @@ def add_to_bag(request, item_id):
 
     request.session['bag'] = bag
     return redirect(redirect_url)
+
+
+def adjust_bag(request, item_id):
+    """
+    Adjust the quantity of the specified product to the specified amount.
+
+    If quantity is greater than zero set the items quantity
+    accordingly otherwise just remove the item.
+
+    If there's a size, drill into the
+    items by size dictionary, find that specific size and either set its
+    quantity to the updated one or remove it if the quantity submitted is zero.
+    """
+
+    quantity = int(request.POST.get('quantity'))
+    size = None
+    if 'product_size' in request.POST:
+        size = request.POST['product_size']
+    bag = request.session.get('bag', {})  # get or create
+
+    if size:
+        if quantity > 0:
+            bag[item_id]['items_by_size'][size] = quantity
+        else:
+            del bag[item_id]['items_by_size'][size]
+            if not bag[item_id]['items_by_size']:  # Items by size dict false
+                bag.pop(item_id)
+    else:
+        if quantity > 0:
+            bag[item_id] = quantity
+        else:
+            bag.pop(item_id)
+
+    request.session['bag'] = bag
+    return redirect(reverse('view_bag'))
+
+
+def remove_from_bag(request, item_id):
+    """
+    Removes items from the shopping bag.
+
+    If size is in request.post.
+    Delete that size key in the items by size dictionary.
+
+    If that's the only size in the bag.
+    i.e. if the items by size dictionary is now empty,
+    which will evaluate to false.
+    Remove the entire item id so theres not an empty items
+    by size dictionary hanging around.
+
+    If there is no size. 'pop' item out of the bag.
+
+    View will be posted to from a JavaScript function.
+    Return an actual 200 HTTP response.
+    Implying that the item was successfully removed.
+    """
+    try:
+        size = None
+        if 'product_size' in request.POST:
+            size = request.POST['product_size']
+        bag = request.session.get('bag', {})  # get or create
+
+        if size:
+            del bag[item_id]['items_by_size'][size]
+            if not bag[item_id]['items_by_size']:
+                bag.pop(item_id)
+        else:
+            bag.pop(item_id)
+
+        request.session['bag'] = bag
+        return HttpResponse(status=200)
+
+    except Exception as e:
+        return HttpResponse(status=500)

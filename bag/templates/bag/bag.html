@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load static %}
+{% load bag_tools %}
 
 {% block page_header %}
     <div class="container header-container">
@@ -52,7 +53,7 @@
                                     <p class="my-0">${{ item.product.price }}</p>
                                 </td>
                                 <td class="py-3 w-25">
-                                    <form class="form update-form" method="POST" action="">
+                                    <form class="form update-form" method="POST" action="{% url 'adjust_bag' item.item_id %}">
                                         {% csrf_token %}
                                         <div class="form-group">
                                             <div class="input-group">
@@ -83,10 +84,10 @@
                                         </div>
                                     </form>
                                     <a class="update-link text-info"><small>Update</small></a>
-                                    <a class="remove-item text-danger float-right" id="remove_{{ item.item_id }}" data-size="{{ item.size }}"><small>Remove</small></a>
+                                    <a class="remove-item text-danger float-right" id="remove_{{ item.item_id }}" data-product_size="{{ item.size }}"><small>Remove</small></a>
                                 </td>
                                 <td class="py-3">
-                                    <p class="my-0">${{ item.product.price }}</p>
+                                    <p class="my-0">${{ item.product.price | calc_subtotal:item.quantity }}</p>
                                 </td>
                             </tr>
                         {% endfor %}
@@ -139,34 +140,35 @@
 {% block postloadjs %}
 {{ block.super }}
 {% include 'products/includes/quantity_input_script.html' %}
+    <script type="text/javascript">
+        // updates quantity on click
+        // On the click event of the update link.
+        // Use the previous method to find the most recently seen update form in the Dom.
+        // Store the form in a variable. And then call the forms submit method.
+        $('.update-link').click(function(e) {
+            var form = $(this).prev('.update-form');
+            form.submit();
+        })
 
-<script type="text/javascript">
-    // updates quantity on click
-    // On the click event of the update link.
-    // Use the previous method to find the most recently seen update form in the Dom.
-    // Store the form in a variable. And then call the forms submit method.
-    $(".update-link").click(function(e) {
-        var form = $(this).prev('.update-form');
-        form.submit();
-    })
-
-    // remove and reload on click
-    // post  data to URL.
-    // once the response comes back from the server reload the page to reflect the updated bag.
-    $(".update-link").click(function(e) {
-        var csrfToken = "{{ csrf_token }}" // actual template variable, not template tag
-        var itemId = $(this).attr('id').split('remove_')[1]; // item id obtained by splitting the ID of the update link being clicked on
-        var size = $(this).data("size");
-        var url = `/bag/remove/${itemId}`;
-        var data = {'csrfmiddlewaretoken': csrfToken, 'size': size}; // object used to send data to server
-
+        // Remove item and reload on click
+        // post  data to URL.
+        // once the response comes back from the server reload the page to reflect the updated bag.
+        // collects the actual csrf template variable, not template tag
+        // The item id obtained by splitting the ID of the update link being clicked on
+        // data variable is the object used to send data to server
         // using the post method from jQuery. Giving it both the URL and the data.
         // When done execute a function to reload the page.
+        $('.remove-item').click(function(e) {
+            var csrfToken = "{{ csrf_token }}";
+            var itemId = $(this).attr('id').split('remove_')[1];
+            var size = $(this).data('product_size');
+            var url = `/bag/remove/${itemId}/`;
+            var data = {'csrfmiddlewaretoken': csrfToken, 'product_size': size};
 
-        $.post(url, data)
-         .done(function() {
-             location.reload();
-         });
-    })
-</script>
+            $.post(url, data)
+            .done(function() {
+                location.reload();
+            });
+        })
+    </script>
 {% endblock %}
