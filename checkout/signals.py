@@ -1,4 +1,4 @@
-""" This module contains signals used in the order app """
+""" This module contains signals used in the order app (SEE init.py) """
 
 from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver

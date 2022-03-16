@@ -56,6 +56,14 @@ class Order(models.Model):
 
         Works by using the sum function across all the line-item total
         fields for all line items on this order.
+        Adding a zero to the end of the line
+        that aggregates all the line item totals.
+        will prevent an error if all the line items
+        from an order are manually deleted
+        Making sure that this sets the order total to zero instead of none.
+        Without this, the next line would cause an error
+        because it would try to determine if
+        none is less than or equal to the delivery threshold.
         The default behavior is to add a new field
         to the query set called line-item total sum.
         Which can then be set to the order total to that.
@@ -63,7 +71,7 @@ class Order(models.Model):
         then calculate the delivery cost using the free delivery threshold
         and the standard delivery percentage from settings file.
         """
-        self.order_total = self.lineitems.aggregate(Sum('lineitem_total'))['lineitem_total__sum']  # noqa
+        self.order_total = self.lineitems.aggregate(Sum('lineitem_total'))['lineitem_total__sum'] or 0  # noqa
         if self.order_total < settings.FREE_DELIVERY_THRESHOLD:
             self.delivery_cost = self.order_total * settings.STANDARD_DELIVERY_PERCENTAGE / 100  # noqa
         else:
