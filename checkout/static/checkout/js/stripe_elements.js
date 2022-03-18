@@ -57,7 +57,9 @@ card.addEventListener('change', function (event) {
 
 // Handle form submit
 // collects form submit with click, prevents default action (POST)
-// instead, initiates the stripe.confirm card method
+// trigger the overlay and fade out the form when the user clicks the submit button
+// reverse that if there's any error.
+// initiates the stripe.confirm card method
 // prevents the card.update and submit to prevent multiple submissions
 // Provide the card to stripe and then executes below function on the result.
 // if error, places in card error div on template. re-enables card and submit.
@@ -69,6 +71,8 @@ form.addEventListener('submit', function(ev) {
     ev.preventDefault();
     card.update({ 'disabled': true});
     $('#submit-button').attr('disabled', true);
+    $('#payment-form').fadeToggle(100);
+    $('#loading-overlay').fadeToggle(100);
     stripe.confirmCardPayment(clientSecret, {
         payment_method: {
             card: card,
@@ -82,6 +86,8 @@ form.addEventListener('submit', function(ev) {
                 </span>
                 <span>${result.error.message}</span>`;
             $(errorDiv).html(html);
+            $('#payment-form').fadeToggle(100);
+            $('#loading-overlay').fadeToggle(100);
             card.update({ 'disabled': false});
             $('#submit-button').attr('disabled', false);
         } else {
