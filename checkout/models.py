@@ -17,6 +17,16 @@ class Order(models.Model):
     Then iterate through the items in the shopping bag.
     Creating an order line item for each one. Attaching it to the order.
     And updating the delivery cost, order total, and grand total.
+
+    it's possible for the same customer to purchase the same things,
+    twice on separate occasions. which would result in the code finding
+    the first order in the database when they place
+    the second one and thus the second-order never being added.
+    We can combat this by adding two new fields to the order model.
+    order_bag and stripe_pid
+    The first is the original shopping bag that created it.
+    And the other contains the stripe payment intent id
+    which is guaranteed to be unique.
     """
     order_number = models.CharField(max_length=32, null=False, editable=False)
     full_name = models.CharField(max_length=50, null=False, blank=False)
@@ -39,6 +49,10 @@ class Order(models.Model):
     grand_total = models.DecimalField(
         max_digits=10, decimal_places=2, null=False, default=0
     )
+    original_bag = models.TextField(null=False, blank=False, default='')
+    stripe_pid = models.CharField(
+        max_length=254, null=False, blank=False, default=''
+    )
 
     def _generate_order_number(self):
         """
@@ -49,6 +63,7 @@ class Order(models.Model):
         """
         return uuid.uuid4().hex.upper()
 
+    # pylint: disable=no-member
     def update_total(self):
         """
         Update grand total each time a line item is added,
@@ -107,6 +122,7 @@ class OrderLineItem(models.Model):
     quantity = models.IntegerField(null=False, blank=False, default=0)
     lineitem_total = models.DecimalField(max_digits=6, decimal_places=2, null=False, blank=False, editable=False)  # noqa
 
+    # pylint: disable=no-member
     def save(self, *args, **kwargs):
         """
         Override the original save method to set the lineitem total
@@ -115,5 +131,6 @@ class OrderLineItem(models.Model):
         self.lineitem_total = self.product.price * self.quantity
         super().save(*args, **kwargs)
 
+    # pylint: disable=no-member
     def __str__(self):
         return f'SKU {self.product.sku} on order {self.order.order_number}'

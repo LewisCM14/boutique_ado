@@ -1,4 +1,5 @@
 """ This module contains the views for the checkout app """
+import json
 
 from django.shortcuts import render, redirect, reverse, get_object_or_404, HttpResponse  # noqa
 from django.views.decorators.http import require_POST
@@ -6,7 +7,6 @@ from django.contrib import messages
 from django.conf import settings
 
 import stripe
-import json
 
 from bag.contexts import bag_contents
 from products.models import Product
@@ -44,9 +44,10 @@ def cache_checkout_data(request):
     except Exception as e:
         messages.error(request, 'Sorry, your payment cannot be \
             processed right now. Please try again later.')
-        return HttpResponse(content=e, status=400) 
+        return HttpResponse(content=e, status=400)
 
 
+# pylint: disable=no-member
 def checkout(request):
     """
     Renders the view for checking out.
@@ -109,7 +110,20 @@ def checkout(request):
         }
         order_form = OrderForm(form_data)
         if order_form.is_valid():
-            order = order_form.save()
+            # from the hidden input on the form
+            # in the check out page containing the client secret.
+            # if the order form is valid. split it to get the payment intent id
+            # get the shopping bag here by dumping it to a JSON string.
+            # Set it on the order, and then save the order.
+            # prevent multiple save events from being executed on the database.
+            # By adding commit equals false to prevent the first one saving
+            # this logic is needed for the event_handler to allow multiple
+            # orders by the same person for the same items
+            order = order_form.save(commit=False)
+            pid = request.POST.get('client_secret').split('_secret')[0]
+            order.stripe_pid = pid
+            order.original_bag = json.dumps(bag)
+            order.save()
             for item_id, item_data in bag.items():
                 try:
                     product = Product.objects.get(id=item_id)
