@@ -8,6 +8,7 @@ from django.conf import settings
 from django_countries.fields import CountryField
 
 from products.models import Product
+from profiles.models import UserProfile
 
 
 class Order(models.Model):
@@ -28,8 +29,18 @@ class Order(models.Model):
     The first is the original shopping bag that created it.
     And the other contains the stripe payment intent id
     which is guaranteed to be unique.
+
+    user profile field
+    foreign key to it on the order model.
+    use models.SET_NULL if the profile is deleted
+    allowing an order history in the admin even if the user is deleted.
+    allow this to be either null or blank so that users who don't have an
+    account can still make purchases.
+    related name of orders so we can access
+    the users orders by calling something like user.userprofile.orders
     """
     order_number = models.CharField(max_length=32, null=False, editable=False)
+    user_profile = models.ForeignKey(UserProfile, on_delete=models.SET_NULL, null=True, blank=True, related_name='orders')  # noqa
     full_name = models.CharField(max_length=50, null=False, blank=False)
     email = models.EmailField(max_length=254, null=False, blank=False)
     phone_number = models.CharField(max_length=20, null=False, blank=False)
