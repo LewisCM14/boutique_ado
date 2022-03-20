@@ -1,6 +1,6 @@
 """ This module contains the views for the checkout app """
-import json
 
+import json
 from django.shortcuts import render, redirect, reverse, get_object_or_404, HttpResponse  # noqa
 from django.views.decorators.http import require_POST
 from django.contrib import messages
@@ -8,8 +8,10 @@ from django.conf import settings
 
 import stripe
 
-from bag.contexts import bag_contents
 from products.models import Product
+from profiles.models import UserProfile
+from profiles.forms import UserProfileForm
+from bag.contexts import bag_contents
 from .forms import OrderForm
 from .models import Order, OrderLineItem
 
@@ -171,7 +173,25 @@ def checkout(request):
             currency=settings.STRIPE_CURRENCY,
         )
 
-        order_form = OrderForm()
+        # prefills the form with the users saved delivery info if stored.
+        if request.user.is_authenticated:
+            try:
+                profile = UserProfile.objects.get(user=request.user)
+                order_form = OrderForm(initial={
+                    'full_name': profile.user.get_full_name(),
+                    'email': profile.user.email,
+                    'phone_number': profile.default_phone_number,
+                    'country': profile.default_country,
+                    'postcode': profile.default_postcode,
+                    'town_or_city': profile.default_town_or_city,
+                    'street_address1': profile.default_street_address1,
+                    'street_address2': profile.default_street_address2,
+                    'county': profile.default_county,
+                })
+            except UserProfile.DoesNotExist:
+                order_form = OrderForm()
+        else:
+            order_form = OrderForm()
 
     if not stripe_public_key:
         messages.warning(request, 'Stripe public key is missing. \
@@ -201,9 +221,45 @@ def checkout_success(request, order_number):
     And that a confirmation email will be sent to the email in the form.
     Finally delete the user shopping bag from the session
     Set the template and the context. And render the template.
+
+    add the user profile to order:
+    check if the user is authenticated because if so
+    they'll have a profile that was created when they created their account.
+    then get the user's profile, Set it on the order then save it.
+    finally use the save info box.
+    First determining if it was checked.
+    And if so, we can pull the data to go in the user's profile
+    off the order into a dictionary of profile data.
+    The dictionaries keys will match the fields on the user profile model.
+    Such as the default phone number, country, postcode, and so on.
+    create an instance of the user profile form, using the profile data.
+    telling it to update the profile obtained above.
+    And if the form is valid save it.
     """
-    # save_info = request.session.get('save_info')
+    save_info = request.session.get('save_info')
     order = get_object_or_404(Order, order_number=order_number)
+
+    if request.user.is_authenticated:
+        profile = UserProfile.objects.get(user=request.user)
+        # Attach the user's profile to the order
+        order.user_profile = profile
+        order.save()
+
+        # Save the user's info
+        if save_info:
+            profile_data = {
+                'default_phone_number': order.phone_number,
+                'default_country': order.country,
+                'default_postcode': order.postcode,
+                'default_town_or_city': order.town_or_city,
+                'default_street_address1': order.street_address1,
+                'default_street_address2': order.street_address2,
+                'default_county': order.county,
+            }
+            user_profile_form = UserProfileForm(profile_data, instance=profile)
+            if user_profile_form.is_valid():
+                user_profile_form.save()
+
     messages.success(request, f'Order successfully processed! \
         Your order number is {order_number}. A confirmation \
         email will be sent to {order.email}.')
