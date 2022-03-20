@@ -109,6 +109,10 @@ And makes the cursor into a pointer. for return to top JS function on products.h
     cursor: pointer;
 }
 
+input[name='q']::placeholder {
+    color: #aab7c4;
+}
+
 /* ------------------------------- bootstrap toasts */
 
 .message-container {
@@ -230,7 +234,6 @@ And makes the cursor into a pointer. for return to top JS function on products.h
 .allauth-form-inner-content a {
 	color: #17a2b8; /* text-info */
 }
-
 
 /* -------------------------------- Media Queries */
 
