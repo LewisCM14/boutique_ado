@@ -142,8 +142,29 @@ def product_detail(request, product_id):
 
 
 def add_product(request):
-    """ Add a product to the store """
-    form = ProductForm()
+    """
+    Add a product to the store
+    if the request method is post.
+    instantiate a new instance of the product form from request.post
+    and include request .files also In order to capture in the image.
+    Then check if form.is_valid. And if so save it.
+    Add a simple success message. And redirect to the same view.
+    If there are any errors on the form.
+    attach a error message telling the user to check their form
+    the empty form instantiation is in the 'if request' else block
+    so it doesn't wipe out the form errors.
+    """
+    if request.method == 'POST':
+        form = ProductForm(request.POST, request.FILES)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Successfully added product!')
+            return redirect(reverse('add_product'))
+        else:
+            messages.error(request, 'Failed to add product. Please ensure the form is valid.')  # noqa
+    else:
+        form = ProductForm()
+
     template = 'products/add_product.html'
     context = {
         'form': form,
