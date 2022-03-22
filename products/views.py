@@ -157,9 +157,10 @@ def add_product(request):
     if request.method == 'POST':
         form = ProductForm(request.POST, request.FILES)
         if form.is_valid():
-            form.save()
+            product = form.save()
             messages.success(request, 'Successfully added product!')
-            return redirect(reverse('add_product'))
+            # redirect to the products detail page
+            return redirect(reverse('product_detail', args=[product.id]))
         else:
             messages.error(request, 'Failed to add product. Please ensure the form is valid.')  # noqa
     else:
@@ -171,3 +172,58 @@ def add_product(request):
     }
 
     return render(request, template, context)
+
+
+def edit_product(request, product_id):
+    """
+    Edit a product in the store
+    take the request and the product ID the user is going to edit.
+    pre-fill the form by getting the product using get_object_or_404
+    And then instantiating a product form using the product.
+    tell it which template to use.
+    Give it a context so the form and the product will be in the template.
+    And then return the render statement.
+
+    if the request method is post.
+    instantiate a form using request.post and request.files
+    tell it the specific instance to update is the product obtained above.
+    If the form is valid save it Add a success message
+    And then redirect to the product detail page using the product id.
+    Otherwise, add an error message and return the form
+    which will have the errors attached.
+    """
+    product = get_object_or_404(Product, pk=product_id)
+    if request.method == 'POST':
+        form = ProductForm(request.POST, request.FILES, instance=product)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Successfully updated product!')
+            return redirect(reverse('product_detail', args=[product.id]))
+        else:
+            messages.error(request, 'Failed to update product. Please ensure the form is valid.')  # noqa
+    else:
+        form = ProductForm(instance=product)
+        messages.info(request, f'You are editing {product.name}')
+
+    template = 'products/edit_product.html'
+    context = {
+        'form': form,
+        'product': product,
+    }
+
+    return render(request, template, context)
+
+
+def delete_product(request, product_id):
+    """
+    Delete a product from the store
+    take the request and the product id to be deleted.
+    start by getting the product With get_object_or_404
+    And then call product.delete.
+    Add a success message.
+    And redirect back to the products page.
+    """
+    product = get_object_or_404(Product, pk=product_id)
+    product.delete()
+    messages.success(request, 'Product deleted!')
+    return redirect(reverse('products'))
