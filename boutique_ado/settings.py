@@ -32,7 +32,7 @@ SECRET_KEY = 'django-insecure-x_m7$92+1ycr^1wy-r8^2c3%l9jpql$rxe*j4tdgef%0^hk#)g
 
 DEBUG = True
 
-ALLOWED_HOSTS = ['boutique-ado-lewiscm.herokuapp.com', 'localhost', ]
+ALLOWED_HOSTS = ['boutique-ado-lewiscm.herokuapp.com', 'localhost',]
 
 # Application definition
 
