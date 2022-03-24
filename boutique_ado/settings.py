@@ -28,10 +28,13 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.environ.get('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-
+# checks the environment  for the development variable, only set in the IDE
+# this variable is true, turning debug on, in heroku it is'nt set,
+# turing debug off
 DEBUG = 'DEVELOPMENT' in os.environ
 
-ALLOWED_HOSTS = ['boutique-ado-lewiscm.herokuapp.com', 'localhost',]
+# allows heroku app or IDE
+ALLOWED_HOSTS = ['boutique-ado-lewiscm.herokuapp.com', 'localhost', ]
 
 # Application definition
 
@@ -54,6 +57,7 @@ INSTALLED_APPS = [
 
     # Other
     'crispy_forms',
+    'storages',
 ]
 
 MIDDLEWARE = [
@@ -126,7 +130,7 @@ WSGI_APPLICATION = 'boutique_ado.wsgi.application'
 # https://docs.djangoproject.com/en/3.2/ref/settings/#databases
 # when the app is running on Heroku
 # where the database URL environment variable will be defined.
-# We connect to Postgres and otherwise, we connect to sequel light.
+# We connect to Postgres and otherwise, we connect to sqlite light.
 
 if 'DATABASE_URL' in os.environ:
     DATABASES = {
@@ -181,6 +185,38 @@ STATICFILES_DIRS = (os.path.join(BASE_DIR, 'static'),)
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+# check if there's an environment variable called USE_AWS in the environment.
+# this variable is set to true on heroku config vars
+# it cannot be found in the IDE
+# domain tells django where static files come from in production
+
+if 'USE_AWS' in os.environ:
+    # Bucket Config
+    AWS_STORAGE_BUCKET_NAME = 'boutique-ado-lewiscm'
+    AWS_S3_REGION_NAME = 'eu-west-2'
+    AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID')
+    AWS_SECRET_ACCESS_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY')
+    AWS_S3_CUSTOM_DOMAIN = f'{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com'
+
+    # Static and media files
+    # tell django that in production we want to use s3 to store
+    # our static files whenever run collectstatic.
+    # And any uploaded product images to go there also.
+    # see custom_storages.py
+
+    # for static file storage use the storage class
+    # save static files is a folder called static.
+    STATICFILES_STORAGE = 'custom_storages.StaticStorage'
+    STATICFILES_LOCATION = 'static'
+    # for media file storage use the storage class
+    # save media files is a folder called media.
+    DEFAULT_FILE_STORAGE = 'custom_storages.MediaStorage'
+    MEDIAFILES_LOCATION = 'media'
+
+    # Override static and media URLs in production
+    STATIC_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/{STATICFILES_LOCATION}/'
+    MEDIA_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/{MEDIAFILES_LOCATION}/'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/3.2/ref/settings/#default-auto-field
