@@ -2,16 +2,26 @@
 
     // Disable +/- buttons outside 1-99 range
     // each input will be associated with a specific product id
-    function handleEnableDisable(itemId) {
-        var currentValue = parseInt($(`#id_qty_${itemId}`).val()); // adds value to string
+    function handleEnableDisable(itemId, size) {
+        if (size) {
+            var currentValue = parseInt($(`.size_${itemId}_${size}`).val());
+        } else {
+            var currentValue = parseInt($(`.id_qty_${itemId}`).val());
+        }
+
         var minusDisabled = currentValue < 2;
         var plusDisabled = currentValue > 98;
 
         // prop method sets the disabled attribute on each button to true or false
         // depending on whether the current value is less than 2 or greater than 98.
 
-        $(`#decrement-qty_${itemId}`).prop('disabled', minusDisabled);
-        $(`#increment-qty_${itemId}`).prop('disabled', plusDisabled);
+        if (size) {
+            $(`.decrement-size_${itemId}_${size}`).prop('disabled', minusDisabled);
+            $(`.increment-size_${itemId}_${size}`).prop('disabled', plusDisabled);
+        } else {
+            $(`.decrement-qty_${itemId}`).prop('disabled', minusDisabled);
+            $(`.increment-qty_${itemId}`).prop('disabled', plusDisabled);
+        }
     }
 
     // disable the minus button by default. By getting all the quantity inputs on the page.
@@ -20,7 +30,8 @@
     var allQtyInputs = $('.qty_input');
     for(var i = 0; i < allQtyInputs.length; i++){
         var itemId = $(allQtyInputs[i]).data('item_id');
-        handleEnableDisable(itemId);
+        var size = $(allQtyInputs[i]).data('size');
+        handleEnableDisable(itemId, size);
     }
 
     // Handle enable/disable function won't be called
@@ -29,30 +40,43 @@
     // and call the function every time the input changes.
     $('.qty_input').change(function() {
         var itemId = $(this).data('item_id');
-        handleEnableDisable(itemId);
+        var size = $(this).data('size');
+        handleEnableDisable(itemId, size);
     });
 
     // Increment quantity
     $('.increment-qty').click(function(e) {
        e.preventDefault();
-       var closestInput = $(this).closest('.input-group').find('.qty_input')[0];
-       var currentValue = parseInt($(closestInput).val());
-       $(closestInput).val(currentValue + 1);
-    // Get the item id using the data method which pulls it from the data item id attribute we added on the button.
-    // Then pass it into the handle enable/disable function.
        var itemId = $(this).data('item_id');
-       handleEnableDisable(itemId);
+       var size = $(this).data('size');
+       var closestInput = $(this).closest('.input-group').find('.qty_input')[0];
+        // Get the item id using the data method which pulls it from the data item id attribute we added on the button.
+        // Then pass it into the handle enable/disable function.
+        if (size) {
+            var allQuantityInputs = $(`.input-group-${itemId} input[data-size='${size}']`);
+        } else {
+            var allQuantityInputs = $(`.input-group-${itemId} input[name='quantity']`);
+        }
+        var currentValue = parseInt($(closestInput).val());
+        $(allQuantityInputs).val(currentValue + 1);
+        handleEnableDisable(itemId, size);
     });
 
     // Decrement quantity
     $('.decrement-qty').click(function(e) {
        e.preventDefault();
-       var closestInput = $(this).closest('.input-group').find('.qty_input')[0];
-       var currentValue = parseInt($(closestInput).val());
-       $(closestInput).val(currentValue - 1);
-    // Get the item id using the data method which pulls it from the data item id attribute we added on the button.
-    // Then pass it into the handle enable/disable function.
        var itemId = $(this).data('item_id');
-       handleEnableDisable(itemId);
+       var size = $(this).data('size');
+       var closestInput = $(this).closest('.input-group').find('.qty_input')[0];
+        // Get the item id using the data method which pulls it from the data item id attribute we added on the button.
+        // Then pass it into the handle enable/disable function.
+        if (size) {
+            var allQuantityInputs = $(`.input-group-${itemId} input[data-size='${size}']`);
+        } else {
+            var allQuantityInputs = $(`.input-group-${itemId} input[name='quantity']`);
+        }
+        var currentValue = parseInt($(closestInput).val());
+        $(allQuantityInputs).val(currentValue - 1);
+        handleEnableDisable(itemId, size);
     });
 </script>
